@@ -55,27 +55,49 @@ export default function Mindmap({ characters, relations, onReload }) {
     setPositions(autoLayout(characters, box.w, box.h));
   }, [characters, box.w, box.h]);
 
-  // drag
+  // drag (uniquement quand on n'est pas en train de créer un lien)
   const onMouseDown = (e, id) => {
     if (!isAdmin) return;
-    if (addingFrom != null) {
-      // mode "création de lien" : second clic = cible
-      if (addingFrom !== id) {
-        createRelation(addingFrom, id);
-      }
-      setAddingFrom(null);
-      return;
-    }
+    if (addingFrom != null) return; // en mode création de lien, on laisse onClick gérer
     e.preventDefault();
     setDragging({ id, offsetX: 0, offsetY: 0 });
   };
+
+  // clic sur un nœud — gère la création de lien en deux étapes
+  const onClickNode = (id) => {
+    if (!isAdmin) return;
+    if (addingFrom === "WAIT") {
+      setAddingFrom(id); // 1er nœud sélectionné
+      return;
+    }
+    if (typeof addingFrom === "number" && addingFrom !== id) {
+      createRelation(addingFrom, id); // 2e nœud → crée le lien
+      setAddingFrom(null);
+      return;
+    }
+    if (addingFrom === id) {
+      setAddingFrom(null); // re-clic sur le 1er nœud annule
+    }
+  };
+
+  // Échap pour annuler
+  useEffect(() => {
+    if (addingFrom == null) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setAddingFrom(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [addingFrom]);
   useEffect(() => {
     if (!dragging) return;
     const onMove = (e) => {
       const r = boardRef.current?.getBoundingClientRect();
       if (!r) return;
-      const x = e.clientX - r.left;
-      const y = e.clientY - r.top;
+      // marge pour que le polaroid (≈ 90px de large) ne sorte pas
+      const pad = 50;
+      const x = Math.max(pad, Math.min(r.width - pad, e.clientX - r.left));
+      const y = Math.max(pad, Math.min(r.height - pad, e.clientY - r.top));
       setPositions((p) => ({ ...p, [dragging.id]: { x, y } }));
     };
     const onUp = async () => {
@@ -112,34 +134,55 @@ export default function Mindmap({ characters, relations, onReload }) {
     onReload?.();
   };
 
+  const resetPositions = async () => {
+    if (!confirm("Remettre tous les polaroids en position automatique ?")) return;
+    await supabase
+      .from("characters")
+      .update({ x: null, y: null })
+      .neq("id", -1); // tous
+    onReload?.();
+  };
+
   return (
     <div className="space-y-3">
       {/* aide admin */}
       {isAdmin && (
-        <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-bone/40 flex items-center gap-4 flex-wrap">
-          <span>· glisser un nœud pour le déplacer</span>
-          <span>· clic sur un lien pour l'éditer/supprimer</span>
-          <button
-            onClick={() => setAddingFrom(addingFrom ? null : "WAIT")}
-            className={`px-3 py-1 border ${
-              addingFrom
-                ? "border-rust text-rust"
-                : "border-bone/20 hover:border-rust hover:text-rust"
-            } transition`}
-          >
-            {addingFrom === "WAIT"
-              ? "→ clic sur le 1er nœud..."
-              : addingFrom
-              ? "→ clic sur le 2e nœud (esc pour annuler)"
-              : "+ créer un lien"}
-          </button>
-          {addingFrom && (
+        <div className="space-y-2">
+          <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-bone/40 flex items-center gap-4 flex-wrap">
+            <span>· glisser un nœud pour le déplacer</span>
+            <span>· clic sur une ficelle pour l'éditer / supprimer</span>
             <button
-              onClick={() => setAddingFrom(null)}
-              className="text-bone/40 hover:text-rust"
+              onClick={() =>
+                setAddingFrom(addingFrom != null ? null : "WAIT")
+              }
+              className={`px-3 py-1 border transition ${
+                addingFrom != null
+                  ? "border-rust text-rust bg-rust/10"
+                  : "border-bone/20 hover:border-rust hover:text-rust"
+              }`}
             >
-              annuler
+              {addingFrom != null ? "× annuler" : "+ créer un lien"}
             </button>
+            <button
+              onClick={resetPositions}
+              className="px-3 py-1 border border-bone/20 hover:border-rust hover:text-rust transition"
+              title="repositionne tous les polaroids automatiquement"
+            >
+              ↻ réinitialiser positions
+            </button>
+          </div>
+          {addingFrom === "WAIT" && (
+            <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-rust bleeding animate-flicker border border-rust/40 px-3 py-2 bg-ink/60">
+              étape 1/2 → clique sur le PREMIER nœud (esc pour annuler)
+            </div>
+          )}
+          {typeof addingFrom === "number" && (
+            <div className="font-mono text-[11px] tracking-[0.2em] uppercase text-rust bleeding animate-flicker border border-rust/40 px-3 py-2 bg-ink/60">
+              étape 2/2 → clique sur le SECOND nœud à relier · 1er sélectionné :{" "}
+              <span className="text-bone">
+                {characters.find((c) => c.id === addingFrom)?.name || "?"}
+              </span>
+            </div>
           )}
         </div>
       )}
@@ -153,7 +196,10 @@ export default function Mindmap({ characters, relations, onReload }) {
           backgroundSize: "24px 24px",
         }}
         onClick={(e) => {
-          if (addingFrom === "WAIT") setAddingFrom(null);
+          // ne reset que si on clique vraiment sur le board (pas sur un nœud enfant)
+          if (e.target === e.currentTarget && addingFrom === "WAIT") {
+            setAddingFrom(null);
+          }
         }}
       >
         {/* SVG ficelles */}
@@ -228,12 +274,14 @@ export default function Mindmap({ characters, relations, onReload }) {
             <div
               key={c.id}
               onMouseDown={(e) => onMouseDown(e, c.id)}
-              onClick={() => {
-                if (addingFrom === "WAIT") setAddingFrom(c.id);
-              }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 cursor-${
-                isAdmin ? (addingFrom ? "crosshair" : "grab") : "default"
-              } transition-transform`}
+              onClick={() => onClickNode(c.id)}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 transition-transform ${
+                isAdmin
+                  ? addingFrom != null
+                    ? "cursor-crosshair"
+                    : "cursor-grab"
+                  : "cursor-default"
+              }`}
               style={{
                 left: p.x,
                 top: p.y,
