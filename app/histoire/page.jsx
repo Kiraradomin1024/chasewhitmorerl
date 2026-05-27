@@ -55,10 +55,10 @@ export default function Histoire() {
   return (
     <section className="min-h-screen px-6 md:px-20 py-24 max-w-3xl">
       <div className="font-mono text-[10px] tracking-[0.4em] text-bone/40 uppercase mb-3">
-        journal · non destiné à être lu
+        notes · non destinées à être lues
       </div>
       <h1 className="font-serif text-5xl md:text-6xl text-bone mb-2">
-        Ce qu'il écrit.
+        Ce qu'il note.
       </h1>
       <p className="handwritten text-2xl bleeding mb-16">
         quand la maison dort.
@@ -112,7 +112,8 @@ export default function Histoire() {
                 )}
               </div>
               <div
-                className={`font-serif text-lg leading-loose whitespace-pre-line ${toneStyles[e.tone]}`}
+                className={`font-serif text-lg leading-loose whitespace-pre-line break-words ${toneStyles[e.tone]}`}
+                style={{ overflowWrap: "anywhere" }}
               >
                 <Editable
                   table="journal_entries"

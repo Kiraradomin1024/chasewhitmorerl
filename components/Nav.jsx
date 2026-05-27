@@ -7,7 +7,7 @@ import AuthBar from "./AuthBar";
 const links = [
   { href: "/", label: "entrée" },
   { href: "/bio", label: "fiche" },
-  { href: "/histoire", label: "journal" },
+  { href: "/histoire", label: "notes" },
   { href: "/livre", label: "livre" },
   { href: "/relations", label: "les autres" },
   { href: "/pensees", label: "pensées" },

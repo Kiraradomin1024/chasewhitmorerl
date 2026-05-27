@@ -60,7 +60,7 @@ export default function Editable({
 
   if (!editing) {
     return (
-      <span className="group relative inline">
+      <span className="group relative inline" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>
         <span className={className}>{value || <span className="opacity-30">{placeholder}</span>}</span>
         {isAdmin && (
           <button
