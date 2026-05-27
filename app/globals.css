@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-hand: "Caveat", "Shadows Into Light", cursive;
+  --font-serif: "EB Garamond", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html, body {
+  background: #0a0a0a;
+  color: #d4c9b8;
+  font-family: var(--font-serif);
+  overflow-x: hidden;
+}
+
+::selection { background: #8b1a1a; color: #0a0a0a; }
+
+/* Grain overlay — fixed across the whole site */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+}
+
+.vignette::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 49;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.85) 100%);
+}
+
+/* Glitch text */
+.glitch {
+  position: relative;
+  display: inline-block;
+}
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.glitch::before {
+  color: #8b1a1a;
+  transform: translate(-2px, 0);
+  mix-blend-mode: screen;
+  animation: glitchShift 3s infinite;
+}
+.glitch::after {
+  color: #2a9aa1;
+  transform: translate(2px, 0);
+  mix-blend-mode: screen;
+  animation: glitchShift 2.3s infinite reverse;
+}
+@keyframes glitchShift {
+  0%, 90%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); }
+  92% { clip-path: inset(20% 0 60% 0); transform: translate(-3px, 0); }
+  94% { clip-path: inset(60% 0 10% 0); transform: translate(3px, 0); }
+  96% { clip-path: inset(40% 0 40% 0); transform: translate(-2px, 1px); }
+}
+
+.scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(0,0,0,0.25) 3px,
+    rgba(0,0,0,0.25) 3px
+  );
+}
+
+.handwritten { font-family: var(--font-hand); letter-spacing: 0.02em; }
+
+.bleeding {
+  color: #c14040;
+  text-shadow: 0 0 4px rgba(193,64,64,0.5), 0 0 18px rgba(139,26,26,0.3);
+}
+
+a { color: inherit; }
+
+.heartbeat {
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  10% { transform: scale(1.08); opacity: 1; }
+  20% { transform: scale(1); opacity: 0.7; }
+  30% { transform: scale(1.04); opacity: 0.9; }
+  40% { transform: scale(1); opacity: 0.7; }
+}
+
+/* Portrait : noir & blanc malade, vignette intérieure, voile rouge subtil */
+.portrait {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.portrait img {
+  filter: grayscale(100%) contrast(118%) brightness(82%) sepia(8%);
+  transition: filter 0.6s ease;
+}
+.portrait::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.65) 100%),
+    linear-gradient(180deg, rgba(139,26,26,0.06) 0%, transparent 30%, transparent 70%, rgba(139,26,26,0.10) 100%);
+  mix-blend-mode: multiply;
+}
+.portrait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(0,0,0,0.15) 3px,
+    rgba(0,0,0,0.15) 3px
+  );
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+}
+/* Au hover : flicker très bref, comme un souvenir qui clignote */
+.portrait:hover img {
+  filter: grayscale(100%) contrast(135%) brightness(75%) sepia(15%);
+  animation: portraitFlicker 1.8s steps(3) 1;
+}
+@keyframes portraitFlicker {
+  0%, 100% { opacity: 1; }
+  20% { opacity: 0.6; filter: grayscale(100%) contrast(160%) brightness(60%) sepia(25%); }
+  21% { opacity: 1; }
+  60% { opacity: 0.85; }
+  61% { opacity: 1; }
+}
+
+.tremble {
+  animation: tremble 0.18s infinite;
+}
+@keyframes tremble {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(1px, -1px); }
+  60% { transform: translate(-1px, -1px); }
+  80% { transform: translate(1px, 1px); }
+}
